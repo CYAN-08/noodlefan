@@ -12,6 +12,15 @@
     --accent: #c96a4a;
     --muted: #8a8378;
     --line: #e0dad2;
+    --panel: #f2ede6;
+  }
+  html[data-theme="dark"] {
+    --bg: #1a1a1c;
+    --text: #d6d3ce;
+    --accent: #e08a6a;
+    --muted: #8a857e;
+    --line: #33322f;
+    --panel: #242422;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -21,30 +30,77 @@
     line-height: 2;
     font-size: 17px;
     -webkit-font-smoothing: antialiased;
+    transition: background .3s, color .3s;
   }
   .wrap { max-width: 720px; margin: 0 auto; padding: 0 24px; }
 
+  /* 顶部栏 */
   header {
-    padding: 40px 0 24px;
+    padding: 20px 0;
     border-bottom: 1px solid var(--line);
-    text-align: center;
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    transition: background .3s;
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
   }
   header h1 {
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 600;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  header a {
-    display: inline-block;
-    margin-top: 16px;
+  .actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .icon-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--text);
     font-size: 13px;
-    color: var(--muted);
-    text-decoration: none;
-    letter-spacing: 0.1em;
+    padding: 6px 12px;
+    border-radius: 2px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.06em;
+    transition: border-color .2s, color .2s;
+    white-space: nowrap;
   }
-  header a:hover { color: var(--accent); }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-  main { padding: 48px 0 100px; }
+  /* 目录 */
+  #toc {
+    margin: 32px 0 8px;
+    padding: 20px 24px;
+    background: var(--panel);
+    border-left: 3px solid var(--accent);
+    transition: background .3s;
+  }
+  #toc h2 {
+    font-size: 13px;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    font-weight: 400;
+    margin-bottom: 12px;
+  }
+  #toc ol { list-style: none; }
+  #toc li { margin: 6px 0; }
+  #toc a {
+    color: var(--text);
+    text-decoration: none;
+    font-size: 15px;
+    border-bottom: 1px solid transparent;
+    transition: color .2s, border-color .2s;
+  }
+  #toc a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+  main { padding: 32px 0 120px; }
 
   #loading {
     text-align: center;
@@ -54,6 +110,7 @@
     letter-spacing: 0.1em;
   }
 
+  #content { padding-top: 32px; }
   #content p {
     margin-bottom: 1.6em;
     text-indent: 1em;
@@ -65,8 +122,12 @@
     border-bottom: 1px solid var(--line);
     font-weight: 600;
     letter-spacing: 0.06em;
+    scroll-margin-top: 80px;
   }
-  #content h1:first-child, #content h2:first-child { margin-top: 0; }
+  #content h1:first-child, #content h2:first-child, #content h3:first-child { margin-top: 0; }
+  #content p.chapter-anchor {
+    scroll-margin-top: 80px;
+  }
 
   .error {
     color: #b33;
@@ -76,48 +137,146 @@
     padding: 40px 0;
   }
   .error code {
-    background: #f0ece6;
+    background: var(--panel);
     padding: 2px 6px;
     border-radius: 3px;
     font-size: 13px;
   }
 
+  /* 返回顶部 */
+  #totop {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s, color .2s, border-color .2s;
+  }
+  #totop.show { opacity: 1; pointer-events: auto; }
+  #totop:hover { color: var(--accent); border-color: var(--accent); }
+
   @media (max-width: 600px) {
     body { font-size: 16px; line-height: 1.9; }
+    header h1 { font-size: 13px; }
+    .icon-btn { font-size: 12px; padding: 5px 9px; }
+    #toc { padding: 16px 18px; }
   }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="wrap">
+  <div class="wrap header-inner">
     <h1>なんだよ、別に好きじゃないんだからね！</h1>
-    <a href="index.html">← 表紙に戻る</a>
+    <div class="actions">
+      <button class="icon-btn" id="themeBtn" onclick="toggleTheme()">🌙 暗色</button>
+      <button class="icon-btn" onclick="location.href='./'">表紙</button>
+    </div>
   </div>
 </header>
 
 <main>
   <div class="wrap">
+
+    <nav id="toc">
+      <h2>目次</h2>
+      <ol id="tocList"></ol>
+    </nav>
+
     <div id="loading">読み込み中……</div>
     <div id="content"></div>
   </div>
 </main>
 
+<button id="totop" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="トップへ">↑</button>
+
 <script>
+  /* ---------- テーマ ---------- */
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    const btn = document.getElementById('themeBtn');
+    btn.textContent = theme === 'dark' ? '☀️ 明色' : '🌙 暗色';
+  }
+  function toggleTheme() {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(cur);
+  }
+  (function initTheme() {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark' || saved === 'light') {
+      applyTheme(saved);
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      applyTheme('dark');
+    } else {
+      applyTheme('light');
+    }
+  })();
+
+  /* ---------- 本文読み込み ---------- */
   const contentEl = document.getElementById('content');
   const loadingEl = document.getElementById('loading');
+  const tocListEl = document.getElementById('tocList');
+
+  /* 目次に載せたい章タイトル（docx内の表記に合わせる） */
+  const CHAPTERS = [
+    '第一章　最悪のガキ',
+    '第二章　九年後',
+    '第三章　体育の日',
+    '第四章　ブランコの隣',
+    '第五章　別に好きじゃないんだからね',
+    '終章　ヌードルは世界で一番好きなもの'
+  ];
+
+  function buildToc() {
+    tocListEl.innerHTML = '';
+    CHAPTERS.forEach((title, i) => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = '#ch-' + i;
+      a.textContent = title;
+      li.appendChild(a);
+      tocListEl.appendChild(li);
+    });
+  }
+
+  /* docx の段落を走査して章タイトルに id を付ける */
+  function attachChapterIds() {
+    const nodes = contentEl.querySelectorAll('p, h1, h2, h3, h4');
+    let chIndex = 0;
+    nodes.forEach(node => {
+      if (chIndex >= CHAPTERS.length) return;
+      const text = (node.textContent || '').replace(/\s+/g, '');
+      const target = CHAPTERS[chIndex].replace(/\s+/g, '');
+      if (text.includes(target) || text.includes(target.replace(/　/g, ''))) {
+        node.id = 'ch-' + chIndex;
+        node.classList.add('chapter-anchor');
+        chIndex++;
+      }
+    });
+    /* 見つからなかった章は、目次リンクを無効化せずそのまま */
+  }
+
+  buildToc();
 
   fetch('1.docx')
     .then(res => {
       if (!res.ok) throw new Error('1.docx が見つかりません（HTTP ' + res.status + '）');
       return res.arrayBuffer();
     })
-    .then(buffer => {
-      return mammoth.convertToHtml({ arrayBuffer: buffer });
-    })
+    .then(buffer => mammoth.convertToHtml({ arrayBuffer: buffer }))
     .then(result => {
       loadingEl.style.display = 'none';
       contentEl.innerHTML = result.value;
+      attachChapterIds();
       if (result.messages.length) {
         console.warn('mammoth messages:', result.messages);
       }
@@ -129,6 +288,13 @@
         '同じフォルダに <code>1.docx</code> が置かれているか確認してください。<br><br>' +
         '（' + err.message + '）</p>';
     });
+
+  /* ---------- トップへ戻るボタン ---------- */
+  const totop = document.getElementById('totop');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 400) totop.classList.add('show');
+    else totop.classList.remove('show');
+  });
 </script>
 
 </body>
